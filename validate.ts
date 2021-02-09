@@ -1,33 +1,30 @@
 import { InconsistencyResult } from "./inconsistencyResult.ts";
+import { Schema, Rule, RuleResult, ISchemaRule, FieldContext } from "./schema.ts";
 
 export type TransformResult = (data: any) => any;
 
 export type InconsistencyMessage = (result: InconsistencyResult) => string;
 
-export type RuleResult = TransformResult | InconsistencyResult | null;
-
-export type Rule = (data: any) => RuleResult | Promise<RuleResult>;
-
-export type Schema = {
-    [key: string]: Rule[] | Rule
-}
-
 const messages: {
     [key: string]: InconsistencyMessage
 } = {};
 
-function isArray(data: any): data is Rule[] {
+function isSchemaRule(data: any): data is ISchemaRule {
+    return data && data.validate;
+}
+
+function isRuleArray(data: any): data is Rule[] {
     return data && data.length && data.length > 0;
 }
 
-function isPromise(data: any): data is Promise<RuleResult> {
+function isPromiseRuleResult(data: any): data is Promise<RuleResult> {
     return data && data.then;
 }
 
-async function treatRuleResult(rule: Rule, context: { current: any, inconsistencies: InconsistencyResult[] }) {
+async function treatRule(rule: Rule, context: FieldContext) {
     let result = rule(context.current);
-    
-    if (result && isPromise(result)) {
+
+    if (result && isPromiseRuleResult(result)) {
         result = await result;
     }
 
@@ -48,12 +45,16 @@ export async function validate(data: any, schema: Schema) {
                 inconsistencies: []
             };
             let rules = schema[key];
-            if (isArray(rules)) {
+            if (isSchemaRule(rules)) {
+                rules.validate(context.current);
+            } 
+            else if (isRuleArray(rules)) {
                 for (let i = 0; i < rules.length; i++) {
-                    await treatRuleResult(rules[i], context);
+                    await treatRule(rules[i], context);
                 }
-            } else {
-                await treatRuleResult(rules, context);
+            } 
+            else {
+                await treatRule(rules, context);
             }
         }
         else {
