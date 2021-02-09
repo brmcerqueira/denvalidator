@@ -2,7 +2,18 @@ import { InconsistencyResult } from "./inconsistencyResult.ts";
 
 export type FieldContext = { 
     current: any, 
-    inconsistencies: InconsistencyResult[] 
+    inconsistencies?: Inconsistencies
+};
+
+export type Inconsistencies = {
+    [key: string]: string;
+};
+
+export type ValidateResult = { 
+    valid: boolean,
+    errors?: {
+        [key: string]: Inconsistencies
+    }
 };
 
 export type TransformResult = (data: any) => any;

@@ -1,13 +1,8 @@
 import { InconsistencyResult } from "./inconsistencyResult.ts";
-import { Schema, Rule, RuleResult, ISchemaRule, FieldContext } from "./schema.ts";
+import { Schema, Rule, RuleResult, ISchemaRule, FieldContext, ValidateResult } from "./schema.ts";
+import { validateMessages } from "./validateMessages.ts";
 
 export type TransformResult = (data: any) => any;
-
-export type InconsistencyMessage = (result: InconsistencyResult) => string;
-
-const messages: {
-    [key: string]: InconsistencyMessage
-} = {};
 
 function isSchemaRule(data: any): data is ISchemaRule {
     return data && data.validate;
@@ -30,19 +25,22 @@ async function treatRule(rule: Rule, context: FieldContext) {
 
     if (result) {
         if (result instanceof InconsistencyResult) {
-            context.inconsistencies.push(result);
+            context.inconsistencies = context.inconsistencies || {};
+            context.inconsistencies[rule.name] = validateMessages[rule.name](result);
         } else {
             context.current = result(context.current);
         }
     }
 }
 
-export async function validate(data: any, schema: Schema) {
+export async function validate(data: any, schema: Schema): Promise<ValidateResult> {
+    let result: ValidateResult = {
+        valid: true
+    };
     for (const key in data) {
         if (schema[key]) {
-            let context = {
-                current: data[key],
-                inconsistencies: []
+            let context: FieldContext = {
+                current: data[key]
             };
             let rules = schema[key];
             if (isSchemaRule(rules)) {
@@ -56,9 +54,16 @@ export async function validate(data: any, schema: Schema) {
             else {
                 await treatRule(rules, context);
             }
+
+            if (context.inconsistencies) {
+                result.valid = false;
+                result.errors = result.errors || {};
+                result.errors[key] = context.inconsistencies;
+            }
         }
         else {
             delete data[key];
         }
     }
+    return result;
 }
