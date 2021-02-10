@@ -1,22 +1,33 @@
-import { Inconsistencies, ErrorsValidateResult } from "./schema.ts";
+import { ErrorsValidateResult, ComplexInconsistencies } from "./schema.ts";
+import { Field } from "./globalMessages.ts";
 
 export class ValidateResultWrapper {
     constructor(private errors: () => ErrorsValidateResult) {
     }
 
-
-    public put(field: string, inconsistencies: Inconsistencies): void {
-        this.errors()[field] = inconsistencies;
+    private isArray(data: any): data is ComplexInconsistencies[] {
+        return data && data.length;
     }
 
+    public put(field: Field, inconsistencies: ComplexInconsistencies): void {
+        let errorsValidateResult = this.errors();
+        if (this.isArray(errorsValidateResult)) {
+            errorsValidateResult[<number>field] = inconsistencies
+        }
+        else {
+            errorsValidateResult[field] = inconsistencies
+        }
+    }
 
-    public go(field: string): ValidateResultWrapper {
+    public go(field: Field, isArray?: boolean): ValidateResultWrapper {
         return new ValidateResultWrapper(() => {
-            let errors = this.errors();
-            errors[field] = {
-                $nested: {}
+            
+            let inconsistencies: ComplexInconsistencies = {
+                $nested: isArray ? [] : {}
             };
-            return <ErrorsValidateResult>errors[field].$nested;
+            this.put(field, inconsistencies);
+
+            return <ErrorsValidateResult>inconsistencies.$nested;
         });
     }
 }

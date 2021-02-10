@@ -1,6 +1,8 @@
 import { InconsistencyResult } from "./inconsistencyResult.ts";
 
-export type InconsistencyMessage = (field: string, result: InconsistencyResult) => string;
+export type Field = string | number;
+
+export type InconsistencyMessage = (field: Field, result: InconsistencyResult) => string;
 
 export type Messages = {
     [key: string]: string | InconsistencyMessage

@@ -12,12 +12,14 @@ export type Inconsistencies = {
 };
 
 export type ComplexInconsistencies = {
-    $nested?: ErrorsValidateResult | ErrorsValidateResult[];
+    $nested?: ErrorsValidateResult;
 } | Inconsistencies;
 
-export type ErrorsValidateResult = {
+export type DictionaryValidateResult = {
     [key: string]: ComplexInconsistencies
 };
+
+export type ErrorsValidateResult = DictionaryValidateResult | ComplexInconsistencies[];
 
 export type ValidateResult = { 
     valid: boolean,
@@ -31,5 +33,5 @@ export type RuleResult = TransformResult | InconsistencyResult | null;
 export type Rule = (data: any) => RuleResult | Promise<RuleResult>;
 
 export type Schema = {
-    [key: string]: Rule[] | Rule | ObjectRule | ArrayRule;
+    [key: string]: Rule | ObjectRule | ArrayRule | Rule[];
 };

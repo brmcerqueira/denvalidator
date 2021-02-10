@@ -1,6 +1,6 @@
 import { Schema, Rule, RuleResult, FieldContext, ValidateResult } from "./schema.ts";
 import { InconsistencyResult } from "./inconsistencyResult.ts";
-import { globalMessages, Messages, InconsistencyMessage } from "./globalMessages.ts";
+import { globalMessages, Messages, InconsistencyMessage, Field } from "./globalMessages.ts";
 import { ObjectRule } from "./objectRule.ts";
 import { ArrayRule } from "./arrayRule.ts";
 import { ComplexRule } from "./complexRule.ts";
@@ -12,6 +12,10 @@ export type TransformResult = (data: any) => any;
 const validateMessages: {
     [key: string]: InconsistencyMessage
 } = {};
+
+function isRule(data: any): data is Rule {
+    return data && data.apply && data.call;
+}
 
 function isRuleArray(data: any): data is Rule[] {
     return data && data.length && data.length > 0;
@@ -50,9 +54,8 @@ export function registerMessages(messages: Messages) {
 
 registerMessages(globalMessages);
 
-async function treatRule(field: string, rule: Rule, context: FieldContext) {
+async function treatRule(field: Field, rule: Rule, context: FieldContext) {
     let result = rule(context.current);
-
     if (result && isPromiseRuleResult(result)) {
         result = await result;
     }
@@ -68,41 +71,75 @@ async function treatRule(field: string, rule: Rule, context: FieldContext) {
 }
 
 async function validateObject(data: any, schema: Schema, wrapper: ValidateResultWrapper) {
-    for (const key in data) {
-        if (schema[key]) {
+    for (const field in data) {
+        if (schema[field]) {
             let context: FieldContext = {
-                current: data[key]
+                current: data[field]
             };
-            let rules = schema[key];
-            if (rules instanceof ComplexRule) {
-                await treatRuleArray(key, rules.rules, context);
-                if (rules instanceof ObjectRule) {
-                    await validateObject(context.current, rules.schema, wrapper.go(key));
+            let item = schema[field];
+            if (item instanceof ComplexRule) {
+                await treatRuleArray(field, item.rules, context);
+                if (item instanceof ObjectRule) {
+                    await validateObject(context.current, item.schema, wrapper.go(field));
                 } 
-                else if (rules instanceof ArrayRule) {
-                    
+                else if (item instanceof ArrayRule) {
+                    let fieldWrapper = wrapper.go(field);
+                    let array: any[] = context.current;
+
+                    let treat: (index: Field, elementContext: FieldContext) => void;
+         
+                    if (isRuleArray(item.each)) {
+                        let each = item.each;
+                        treat = async function (index: Field, itemContext: FieldContext) {
+                            await treatRuleArray(index, each, itemContext);
+                        }
+                    } 
+                    else if (isRule(item.each)) {
+                        let each = item.each;
+                        treat = async function (index: Field, itemContext: FieldContext) {
+                            await treatRule(index, each, itemContext);
+                        }
+                    } 
+                    else {
+                        let each = item.each;
+                        treat = async function (index: Field, itemContext: FieldContext) {
+                            await validateObject(itemContext.current, each, fieldWrapper.go(index));
+                        }                
+                    } 
+
+                    for (let i = 0; i < array.length; i++) {
+                        let itemContext: FieldContext = {
+                            current: array[i]
+                        };
+
+                        await treat(i, itemContext);
+
+                        if (itemContext.inconsistencies) {
+                            fieldWrapper.put(i, itemContext.inconsistencies);
+                        }
+                    }                                   
                 } 
             } 
-            else if (isRuleArray(rules)) {
-                await treatRuleArray(key, rules, context);
+            else if (isRuleArray(item)) {
+                await treatRuleArray(field, item, context);
             } 
             else {
-                await treatRule(key, rules, context);
+                await treatRule(field, item, context);
             }
 
             if (context.inconsistencies) {
-                wrapper.put(key, context.inconsistencies);
+                wrapper.put(field, context.inconsistencies);
             }
 
-            data[key] = context.current;
+            data[field] = context.current;
         }
         else {
-            delete data[key];
+            delete data[field];
         }
     }
 }
 
-async function treatRuleArray(field: string, rules: Rule[], context: FieldContext) {
+async function treatRuleArray(field: Field, rules: Rule[], context: FieldContext) {
     for (let i = 0; i < rules.length; i++) {
         await treatRule(field, rules[i], context);
     }
