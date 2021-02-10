@@ -1,8 +1,12 @@
-import { InconsistencyResult } from "./inconsistencyResult.ts";
 import { Schema, Rule, RuleResult, ISchemaRule, FieldContext, ValidateResult } from "./schema.ts";
-import { validateMessages } from "./validateMessages.ts";
+import { InconsistencyResult } from "./inconsistencyResult.ts";
+import { globalMessages, Messages, InconsistencyMessage } from "./globalMessages.ts";
 
 export type TransformResult = (data: any) => any;
+
+const validateMessages: {
+    [key: string]: InconsistencyMessage
+} = {};
 
 function isSchemaRule(data: any): data is ISchemaRule {
     return data && data.validate;
@@ -16,7 +20,36 @@ function isPromiseRuleResult(data: any): data is Promise<RuleResult> {
     return data && data.then;
 }
 
-async function treatRule(rule: Rule, context: FieldContext) {
+function compileInconsistencyMessage(message: string): InconsistencyMessage {
+    let text = "";
+
+    message.split(/#{(?<variable>[\w\\.]*)}/).forEach(item => {
+        if (item !== "") {
+            if (text.length > 0) {
+              text += " + ";
+            }
+            text += item.startsWith("#{") && item.endsWith("}") ? item.slice(2, item.length - 1) : `'${item}'`;
+        }
+    });
+
+    return eval(`function (field, result) { 
+        let value = result.current; 
+        let constraints = result.constraints; 
+        return '${text}'; 
+    }`);
+}
+
+export function registerMessages(messages: Messages) {
+    for (const key in messages) {
+        validateMessages[key] = typeof messages[key] === "string" 
+        ? compileInconsistencyMessage(<string>messages[key]) 
+        : <InconsistencyMessage>messages[key];
+    }
+}
+
+registerMessages(globalMessages);
+
+async function treatRule(field: string, rule: Rule, context: FieldContext) {
     let result = rule(context.current);
 
     if (result && isPromiseRuleResult(result)) {
@@ -26,7 +59,7 @@ async function treatRule(rule: Rule, context: FieldContext) {
     if (result) {
         if (result instanceof InconsistencyResult) {
             context.inconsistencies = context.inconsistencies || {};
-            context.inconsistencies[rule.name] = validateMessages[rule.name](result);
+            context.inconsistencies[rule.name] = validateMessages[rule.name](field, result);
         } else {
             context.current = result(context.current);
         }
@@ -48,11 +81,11 @@ export async function validate(data: any, schema: Schema): Promise<ValidateResul
             } 
             else if (isRuleArray(rules)) {
                 for (let i = 0; i < rules.length; i++) {
-                    await treatRule(rules[i], context);
+                    await treatRule(key, rules[i], context);
                 }
             } 
             else {
-                await treatRule(rules, context);
+                await treatRule(key, rules, context);
             }
 
             if (context.inconsistencies) {
