@@ -1,16 +1,15 @@
-import { Schema, Rule, RuleResult, ISchemaRule, FieldContext, ValidateResult } from "./schema.ts";
+import { Schema, Rule, RuleResult, FieldContext, ValidateResult } from "./schema.ts";
 import { InconsistencyResult } from "./inconsistencyResult.ts";
 import { globalMessages, Messages, InconsistencyMessage } from "./globalMessages.ts";
+import { ObjectRule } from "./objectRule.ts";
+import { ArrayRule } from "./arrayRule.ts";
+import { ComplexRule } from "./complexRule.ts";
 
 export type TransformResult = (data: any) => any;
 
 const validateMessages: {
     [key: string]: InconsistencyMessage
 } = {};
-
-function isSchemaRule(data: any): data is ISchemaRule {
-    return data && data.validate;
-}
 
 function isRuleArray(data: any): data is Rule[] {
     return data && data.length && data.length > 0;
@@ -66,7 +65,50 @@ async function treatRule(field: string, rule: Rule, context: FieldContext) {
     }
 }
 
-export async function validate(data: any, schema: Schema): Promise<ValidateResult> {
+export async function validateObject(data: any, schema: Schema, result: ValidateResult) {
+    for (const key in data) {
+        if (schema[key]) {
+            let context: FieldContext = {
+                current: data[key]
+            };
+            let rules = schema[key];
+            if (rules instanceof ComplexRule) {
+                await treatRuleArray(key, rules.rules, context);
+                if (rules instanceof ObjectRule) {
+          
+                } 
+                else if (rules instanceof ArrayRule) {
+                    
+                } 
+            } 
+            else if (isRuleArray(rules)) {
+                await treatRuleArray(key, rules, context);
+            } 
+            else {
+                await treatRule(key, rules, context);
+            }
+
+            if (context.inconsistencies) {
+                result.valid = false;
+                result.errors = result.errors || {};
+                result.errors[key] = context.inconsistencies;
+            }
+
+            data[key] = context.current;
+        }
+        else {
+            delete data[key];
+        }
+    }
+}
+
+async function treatRuleArray(field: string, rules: Rule[], context: FieldContext) {
+    for (let i = 0; i < rules.length; i++) {
+        await treatRule(field, rules[i], context);
+    }
+}
+/*
+export async function validate2(data: any, schema: Schema): Promise<ValidateResult> {
     let result: ValidateResult = {
         valid: true
     };
@@ -93,10 +135,12 @@ export async function validate(data: any, schema: Schema): Promise<ValidateResul
                 result.errors = result.errors || {};
                 result.errors[key] = context.inconsistencies;
             }
+
+            data[key] = context.current;
         }
         else {
             delete data[key];
         }
     }
     return result;
-}
+}*/

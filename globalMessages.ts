@@ -1,3 +1,5 @@
+import { InconsistencyResult } from "./inconsistencyResult.ts";
+
 export type InconsistencyMessage = (field: string, result: InconsistencyResult) => string;
 
 export type Messages = {
@@ -5,5 +7,5 @@ export type Messages = {
 };
 
 export const globalMessages: Messages = {
-    required: "The field '#{value}' is required."
+    required: "The field '#{field}' is required."
 };

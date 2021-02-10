@@ -1,9 +1,18 @@
-import { ISchemaRule, Schema, FieldContext } from "./schema.ts";
+import { Schema } from "./schema.ts";
+import { required } from "./required.ts";
+import { ComplexRule } from "./complexRule.ts";
 
-export class ObjectRule implements ISchemaRule {
-    constructor(private required: boolean, private schema: Schema) {
+const isRequired = required();
+
+export class ObjectRule extends ComplexRule {
+    constructor(private _schema: Schema, required: boolean) {
+        super();
+        if (required) {
+            this.rules.push(isRequired);
+        }
     }
 
-    public validate(context: FieldContext): void {
+    public get schema(): Schema {
+        return this._schema;
     }
 }
