@@ -4,6 +4,8 @@ import { globalMessages, Messages, InconsistencyMessage } from "./globalMessages
 import { ObjectRule } from "./objectRule.ts";
 import { ArrayRule } from "./arrayRule.ts";
 import { ComplexRule } from "./complexRule.ts";
+import { ValidateResultWrapper } from "./validateResultWrapper.ts";
+import { RootValidateResultWrapper } from "./rootValidateResultWrapper.ts";
 
 export type TransformResult = (data: any) => any;
 
@@ -65,7 +67,7 @@ async function treatRule(field: string, rule: Rule, context: FieldContext) {
     }
 }
 
-export async function validateObject(data: any, schema: Schema, result: ValidateResult) {
+async function validateObject(data: any, schema: Schema, wrapper: ValidateResultWrapper) {
     for (const key in data) {
         if (schema[key]) {
             let context: FieldContext = {
@@ -75,7 +77,7 @@ export async function validateObject(data: any, schema: Schema, result: Validate
             if (rules instanceof ComplexRule) {
                 await treatRuleArray(key, rules.rules, context);
                 if (rules instanceof ObjectRule) {
-          
+                    await validateObject(context.current, rules.schema, wrapper.go(key));
                 } 
                 else if (rules instanceof ArrayRule) {
                     
@@ -89,9 +91,7 @@ export async function validateObject(data: any, schema: Schema, result: Validate
             }
 
             if (context.inconsistencies) {
-                result.valid = false;
-                result.errors = result.errors || {};
-                result.errors[key] = context.inconsistencies;
+                wrapper.put(key, context.inconsistencies);
             }
 
             data[key] = context.current;
@@ -107,40 +107,9 @@ async function treatRuleArray(field: string, rules: Rule[], context: FieldContex
         await treatRule(field, rules[i], context);
     }
 }
-/*
-export async function validate2(data: any, schema: Schema): Promise<ValidateResult> {
-    let result: ValidateResult = {
-        valid: true
-    };
-    for (const key in data) {
-        if (schema[key]) {
-            let context: FieldContext = {
-                current: data[key]
-            };
-            let rules = schema[key];
-            if (isSchemaRule(rules)) {
-                rules.validate(context.current);
-            } 
-            else if (isRuleArray(rules)) {
-                for (let i = 0; i < rules.length; i++) {
-                    await treatRule(key, rules[i], context);
-                }
-            } 
-            else {
-                await treatRule(key, rules, context);
-            }
 
-            if (context.inconsistencies) {
-                result.valid = false;
-                result.errors = result.errors || {};
-                result.errors[key] = context.inconsistencies;
-            }
-
-            data[key] = context.current;
-        }
-        else {
-            delete data[key];
-        }
-    }
-    return result;
-}*/
+export async function validate(data: any, schema: Schema): Promise<ValidateResult> {
+    let root = new RootValidateResultWrapper();
+    await validateObject(data, schema, root);
+    return root.result;
+}

@@ -11,16 +11,17 @@ export type Inconsistencies = {
     [key: string]: string;
 };
 
-export type SchemaInconsistencies = {
-    [key: string]: string;
-    $nested: any | any[];
+export type ComplexInconsistencies = {
+    $nested?: ErrorsValidateResult | ErrorsValidateResult[];
+} | Inconsistencies;
+
+export type ErrorsValidateResult = {
+    [key: string]: ComplexInconsistencies
 };
 
 export type ValidateResult = { 
     valid: boolean,
-    errors?: {
-        [key: string]: Inconsistencies | SchemaInconsistencies
-    }
+    errors?: ErrorsValidateResult
 };
 
 export type TransformResult = (data: any) => any;
