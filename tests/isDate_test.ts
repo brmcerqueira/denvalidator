@@ -25,5 +25,4 @@ Deno.test("isDate - fail", async () => {
     })
 
     assert(!result.valid);
-    console.log(result);
 });
