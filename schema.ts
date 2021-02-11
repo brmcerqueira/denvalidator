@@ -1,6 +1,7 @@
 import { InconsistencyResult } from "./inconsistencyResult.ts";
-import { ObjectRule } from "./objectRule.ts";
-import { ArrayRule } from "./arrayRule.ts";
+import { ComplexRule } from "./rules/complexRule.ts";
+
+export type Field = string | number;
 
 export type FieldContext = { 
     current: any, 
@@ -31,5 +32,5 @@ export type RuleResult = TransformResult | InconsistencyResult | null;
 export type Rule = (data: any) => RuleResult | Promise<RuleResult>;
 
 export type Schema = {
-    [key: string]: Rule | ObjectRule | ArrayRule | Rule[];
+    [key: string]: Rule | ComplexRule | Rule[];
 };

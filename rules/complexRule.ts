@@ -1,4 +1,4 @@
-import { Rule } from "./schema.ts";
+import { Rule } from "../schema.ts";
 
 export abstract class ComplexRule {
     private _rules: Rule[] = [];

@@ -1,4 +1,4 @@
-import { Schema, Rule } from "./schema.ts";
+import { Schema, Rule } from "../schema.ts";
 import { ComplexRule } from "./complexRule.ts";
 import { required } from "./required.ts";
 

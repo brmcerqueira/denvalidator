@@ -1,4 +1,4 @@
-import { ValidateResult, ErrorsValidateResult } from "./schema.ts";
+import { ValidateResult, ErrorsValidateResult } from "../schema.ts";
 import { ValidateResultWrapper } from "./validateResultWrapper.ts";
 
 export class RootValidateResultWrapper extends ValidateResultWrapper {

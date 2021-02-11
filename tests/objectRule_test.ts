@@ -1,6 +1,5 @@
-import { assert, assertEquals, assertStrictEquals, assertThrows } from "https://deno.land/std/testing/asserts.ts";
-import { required, validate } from "../mod.ts";
-import { object } from "../objectRule.ts";
+import { assert } from "https://deno.land/std/testing/asserts.ts";
+import { required, validate, object } from "../mod.ts";
 
 Deno.test("object", async () => {
     let data = {
