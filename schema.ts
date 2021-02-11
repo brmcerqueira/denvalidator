@@ -15,11 +15,9 @@ export type ComplexInconsistencies = {
     $nested?: ErrorsValidateResult;
 } | Inconsistencies;
 
-export type DictionaryValidateResult = {
+export type ErrorsValidateResult = {
     [key: string]: ComplexInconsistencies
 };
-
-export type ErrorsValidateResult = DictionaryValidateResult | ComplexInconsistencies[];
 
 export type ValidateResult = { 
     valid: boolean,

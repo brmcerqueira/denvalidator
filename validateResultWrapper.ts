@@ -5,26 +5,16 @@ export class ValidateResultWrapper {
     constructor(private errors: () => ErrorsValidateResult) {
     }
 
-    private isArray(data: any): data is ComplexInconsistencies[] {
-        return data && data.length;
-    }
-
     public put(field: Field, inconsistencies: ComplexInconsistencies): void {
-        let errorsValidateResult = this.errors();
-        if (this.isArray(errorsValidateResult)) {
-            errorsValidateResult[<number>field] = inconsistencies
-        }
-        else {
-            errorsValidateResult[field] = inconsistencies
-        }
+        this.errors()[field.toString()] = inconsistencies;
     }
 
-    public go(field: Field, isArray?: boolean): ValidateResultWrapper {
-        return new ValidateResultWrapper(() => {
-            
+    public go(field: Field): ValidateResultWrapper {
+        return new ValidateResultWrapper(() => {     
             let inconsistencies: ComplexInconsistencies = {
-                $nested: isArray ? [] : {}
+                $nested: {}
             };
+
             this.put(field, inconsistencies);
 
             return <ErrorsValidateResult>inconsistencies.$nested;
