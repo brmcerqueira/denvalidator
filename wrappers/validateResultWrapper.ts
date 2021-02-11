@@ -1,4 +1,5 @@
-import { ErrorsValidateResult, ComplexInconsistencies, Field } from "../schema.ts";
+import { ErrorsValidateResult, ComplexInconsistencies } from "../schema.ts";
+import { Field } from "../field.ts";
 
 export class ValidateResultWrapper {
     constructor(private errors: () => ErrorsValidateResult) {

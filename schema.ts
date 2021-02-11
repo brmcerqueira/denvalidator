@@ -1,12 +1,6 @@
-import { InconsistencyResult } from "./inconsistencyResult.ts";
 import { ComplexRule } from "./rules/complexRule.ts";
-
-export type Field = string | number;
-
-export type FieldContext = { 
-    current: any, 
-    inconsistencies?: Inconsistencies
-};
+import { TransformResult } from "./results/transformResult.ts";
+import { InconsistencyResult } from "./results/inconsistencyResult.ts";
 
 export type Inconsistencies = {
     [key: string]: string;
@@ -24,8 +18,6 @@ export type ValidateResult = {
     valid: boolean,
     errors?: ErrorsValidateResult
 };
-
-export type TransformResult = (data: any) => any;
 
 export type RuleResult = TransformResult | InconsistencyResult | null;
 

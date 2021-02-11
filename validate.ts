@@ -1,11 +1,17 @@
-import { Schema, Rule, RuleResult, FieldContext, ValidateResult, Field } from "./schema.ts";
-import { InconsistencyResult } from "./inconsistencyResult.ts";
+import { Schema, Rule, RuleResult, ValidateResult, Inconsistencies } from "./schema.ts";
 import { ObjectRule } from "./rules/objectRule.ts";
 import { ArrayRule } from "./rules/arrayRule.ts";
 import { ComplexRule } from "./rules/complexRule.ts";
 import { ValidateResultWrapper } from "./wrappers/validateResultWrapper.ts";
 import { RootValidateResultWrapper } from "./wrappers/rootValidateResultWrapper.ts";
 import { compiledMessages } from "./messages.ts";
+import { InconsistencyResult } from "./results/inconsistencyResult.ts";
+import { Field } from "./field.ts";
+
+type FieldContext = { 
+    current: any, 
+    inconsistencies?: Inconsistencies
+};
 
 function isRule(data: any): data is Rule {
     return data && data.apply && data.call;
@@ -31,7 +37,7 @@ async function treatRule(field: Field, rule: Rule, context: FieldContext) {
             let message = compiledMessages[rule.name] || compiledMessages.$default;
             context.inconsistencies[rule.name] = message(field, result);
         } else {
-            context.current = result(context.current);
+            context.current = result.value;
         }
     }
 }

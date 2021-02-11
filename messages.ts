@@ -1,5 +1,5 @@
-import { InconsistencyResult } from "./inconsistencyResult.ts";
-import { Field } from "./schema.ts";
+import { InconsistencyResult } from "./results/inconsistencyResult.ts";
+import { Field } from "./field.ts";
 
 export type InconsistencyMessage = (field: Field, result: InconsistencyResult) => string;
 
