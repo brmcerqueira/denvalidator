@@ -25,30 +25,44 @@ function isPromiseRuleResult(data: any): data is Promise<RuleResult> {
     return data && data.then;
 }
 
-function compileInconsistencyMessage(message: string): InconsistencyMessage {
+function compileMessage(key: string, message: string) {
     let text = "";
 
-    message.split(/#{(?<variable>[\w\\.]*)}/).forEach(item => {
+    message.split(/(?<variable>#{[\w\\.]*})/).forEach(item => {
         if (item !== "") {
             if (text.length > 0) {
-              text += " + ";
+            text += " + ";
             }
-            text += item.startsWith("#{") && item.endsWith("}") ? item.slice(2, item.length - 1) : `'${item}'`;
+            text += item.startsWith("#{") && item.endsWith("}") 
+            ? item.slice(2, item.length - 1) 
+            : `"${item.replace("\\","\\\\").replace('"','\\"').replace("'","\\'")}"`;
         }
     });
 
-    return eval(`function (field, result) { 
+    eval(`registerValidateMessage(key, message, function(field, result) { 
         let value = result.current; 
         let constraints = result.constraints; 
-        return '${text}'; 
-    }`);
+        return ${text};
+    });`)
+}
+
+function registerValidateMessage(key: string, message: string, compiled: InconsistencyMessage) {
+    validateMessages[key] = (field: Field, result: InconsistencyResult): string => {      
+       try {
+            return compiled(field, result);
+       } catch {
+            throw new Error(`Can't build message '${key}' => ${message}`);      
+       } 
+    };
 }
 
 export function registerMessages(messages: Messages) {
     for (const key in messages) {
-        validateMessages[key] = typeof messages[key] === "string" 
-        ? compileInconsistencyMessage(<string>messages[key]) 
-        : <InconsistencyMessage>messages[key];
+        if (typeof messages[key] === "string" ) {
+            compileMessage(key, <string>messages[key]);
+        } else {
+            validateMessages[key] = <InconsistencyMessage>messages[key];
+        }      
     }
 }
 
