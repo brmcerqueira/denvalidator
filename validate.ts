@@ -85,69 +85,70 @@ async function treatRule(field: Field, rule: Rule, context: FieldContext) {
 }
 
 async function validateObject(data: any, schema: Schema, wrapper: ValidateResultWrapper) {
-    for (const field in data) {
-        if (schema[field]) {
-            let context: FieldContext = {
-                current: data[field]
-            };
-            let item = schema[field];
-            if (item instanceof ComplexRule) {
-                await treatRuleArray(field, item.rules, context);
-                if (item instanceof ObjectRule) {
-                    await validateObject(context.current, item.schema, wrapper.go(field));
-                } 
-                else if (item instanceof ArrayRule) {
-                    let fieldWrapper = wrapper.go(field);
-                    let array: any[] = context.current;
-
-                    let treat: (index: Field, elementContext: FieldContext) => void;
-         
-                    if (isRuleArray(item.each)) {
-                        let each = item.each;
-                        treat = async function (index: Field, itemContext: FieldContext) {
-                            await treatRuleArray(index, each, itemContext);
-                        }
-                    } 
-                    else if (isRule(item.each)) {
-                        let each = item.each;
-                        treat = async function (index: Field, itemContext: FieldContext) {
-                            await treatRule(index, each, itemContext);
-                        }
-                    } 
-                    else {
-                        let each = item.each;
-                        treat = async function (index: Field, itemContext: FieldContext) {
-                            await validateObject(itemContext.current, each, fieldWrapper.go(index));
-                        }                
-                    } 
-
-                    for (let i = 0; i < array.length; i++) {
-                        let itemContext: FieldContext = {
-                            current: array[i]
-                        };
-
-                        await treat(i, itemContext);
-
-                        if (itemContext.inconsistencies) {
-                            fieldWrapper.put(i, itemContext.inconsistencies);
-                        }
-                    }                                   
-                } 
+    for (const field in schema) {
+        let context: FieldContext = {
+            current: data[field]
+        };
+        let item = schema[field];
+        if (item instanceof ComplexRule) {
+            await treatRuleArray(field, item.rules, context);
+            if (item instanceof ObjectRule) {
+                await validateObject(context.current, item.schema, wrapper.go(field));
             } 
-            else if (isRuleArray(item)) {
-                await treatRuleArray(field, item, context);
+            else if (item instanceof ArrayRule) {
+                let fieldWrapper = wrapper.go(field);
+                let array: any[] = context.current;
+
+                let treat: (index: Field, elementContext: FieldContext) => void;
+     
+                if (isRuleArray(item.each)) {
+                    let each = item.each;
+                    treat = async function (index: Field, itemContext: FieldContext) {
+                        await treatRuleArray(index, each, itemContext);
+                    }
+                } 
+                else if (isRule(item.each)) {
+                    let each = item.each;
+                    treat = async function (index: Field, itemContext: FieldContext) {
+                        await treatRule(index, each, itemContext);
+                    }
+                } 
+                else {
+                    let each = item.each;
+                    treat = async function (index: Field, itemContext: FieldContext) {
+                        await validateObject(itemContext.current, each, fieldWrapper.go(index));
+                    }                
+                } 
+
+                for (let i = 0; i < array.length; i++) {
+                    let itemContext: FieldContext = {
+                        current: array[i]
+                    };
+
+                    await treat(i, itemContext);
+
+                    if (itemContext.inconsistencies) {
+                        fieldWrapper.put(i, itemContext.inconsistencies);
+                    }
+                }                                   
             } 
-            else {
-                await treatRule(field, item, context);
-            }
-
-            if (context.inconsistencies) {
-                wrapper.put(field, context.inconsistencies);
-            }
-
-            data[field] = context.current;
-        }
+        } 
+        else if (isRuleArray(item)) {
+            await treatRuleArray(field, item, context);
+        } 
         else {
+            await treatRule(field, item, context);
+        }
+
+        if (context.inconsistencies) {
+            wrapper.put(field, context.inconsistencies);
+        }
+
+        data[field] = context.current;
+    }
+
+    for (const field in data) {
+        if (!schema[field]) {
             delete data[field];
         }
     }
