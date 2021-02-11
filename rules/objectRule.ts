@@ -11,6 +11,7 @@ export function object(arg1: boolean | Schema, arg2?: Schema): ObjectRule {
 export class ObjectRule extends ComplexRule {
     constructor(private _schema: Schema, isRequired: boolean) {
         super();
+        
         if (isRequired) {
             this.rules.push(required);
         }

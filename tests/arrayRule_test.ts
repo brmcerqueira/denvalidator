@@ -39,6 +39,51 @@ Deno.test("array - fail", async () => {
     assert(!result.valid);
 });
 
+Deno.test("array - fail - minLength", async () => {
+    let data = {
+        name: "Test",
+        child: [{
+            name: "Child"
+        },{
+            name: "Child"
+        }]
+    }
+
+    let result = await validate(data, {
+        name: [required],
+        child: array({ 
+            required: true, 
+            min: 3 
+        }, {
+            name: [required]
+        })
+    })
+
+    assert(!result.valid);
+});
+
+Deno.test("array - fail - maxLength", async () => {
+    let data = {
+        name: "Test",
+        child: [{
+            name: "Child"
+        },{
+            name: "Child"
+        }]
+    }
+
+    let result = await validate(data, {
+        name: [required],
+        child: array({ 
+            required: true, 
+            max: 1
+        }, {
+            name: [required]
+        })
+    })
+
+    assert(!result.valid);
+});
 
 Deno.test("array - primitive", async () => {
     let data = {

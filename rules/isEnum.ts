@@ -4,7 +4,7 @@ import { TransformResult } from "../results/transformResult.ts";
 
 export function isEnum(enumType: any): Rule {
     let values = Object.values(enumType);
-    return (data: any): RuleResult => {
+    return function isEnum(data: any): RuleResult {
         if (values.indexOf(data) == -1) {
             return new InconsistencyResult(data, { values: values });
         }

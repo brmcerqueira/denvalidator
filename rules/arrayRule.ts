@@ -1,6 +1,8 @@
 import { Schema, Rule } from "../schema.ts";
 import { ComplexRule } from "./complexRule.ts";
 import { required } from "./required.ts";
+import { minLength } from "./minLength.ts";
+import { maxLength } from "./maxLength.ts";
 
 export type ArrayRuleOptions = {
     required: boolean,
@@ -19,8 +21,17 @@ export function array(arg1: ArrayRuleOptions | ArrayRuleEach, arg2?: ArrayRuleEa
 export class ArrayRule extends ComplexRule {
     constructor(private _each: ArrayRuleEach, options: ArrayRuleOptions) {
         super();
+
         if (options.required) {
             this.rules.push(required);
+        }
+
+        if (options.min) {
+            this.rules.push(minLength(options.min));
+        }
+
+        if (options.max) {
+            this.rules.push(maxLength(options.max));
         }
     }
 

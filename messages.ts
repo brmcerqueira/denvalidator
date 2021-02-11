@@ -7,13 +7,6 @@ export type Messages = {
     [key: string]: string | InconsistencyMessage
 };
 
-const globalMessages: Messages = {
-    $default: "The field '# {field}' with the value '# {value}' has an error.",
-    required: "The field '#{field}' is required.",
-    isString: "The field '#{field}' with the value '#{value}' must be string.",
-    isDate: "The field '#{field}' with the value '#{value}' must be date."
-};
-
 export const compiledMessages: {
     [key: string]: InconsistencyMessage
 } = {};
@@ -21,7 +14,7 @@ export const compiledMessages: {
 function compile(key: string, message: string) {
     let text = "";
 
-    message.split(/(?<variable>#{[\w\\.]*})/).forEach(item => {
+    message.split(/(?<variable>#{[\w\\.('"|)\s]*})/).forEach(item => {
         if (item !== "") {
             if (text.length > 0) {
             text += " + ";
@@ -34,9 +27,9 @@ function compile(key: string, message: string) {
 
     eval(`registerCompiledMessage(key, message, function(field, result) { 
         let value = result.current; 
-        let constraints = result.constraints; 
+        let args = result.args; 
         return ${text};
-    });`)
+    });`);
 }
 
 function registerCompiledMessage(key: string, message: string, compiled: InconsistencyMessage) {
@@ -58,5 +51,3 @@ export function registerMessages(messages: Messages) {
         }      
     }
 }
-
-registerMessages(globalMessages);
