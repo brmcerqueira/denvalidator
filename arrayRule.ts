@@ -8,13 +8,11 @@ export type ArrayRuleOptions = {
     max?: number
 }
 
-const isRequired = required();
-
 export class ArrayRule extends ComplexRule {
     constructor(private _each: Rule | Schema | Rule[], options: ArrayRuleOptions) {
         super();
         if (options.required) {
-            this.rules.push(isRequired);
+            this.rules.push(required);
         }
     }
 

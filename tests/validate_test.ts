@@ -20,5 +20,7 @@ Deno.test("required - fail", async () => {
         name: [required]
     })
 
+    console.log(result);
+
     assert(!result.valid);
 });

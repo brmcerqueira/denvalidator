@@ -2,13 +2,11 @@ import { Schema } from "./schema.ts";
 import { required } from "./required.ts";
 import { ComplexRule } from "./complexRule.ts";
 
-const isRequired = required();
-
 export class ObjectRule extends ComplexRule {
-    constructor(private _schema: Schema, required: boolean) {
+    constructor(private _schema: Schema, isRequired: boolean) {
         super();
-        if (required) {
-            this.rules.push(isRequired);
+        if (isRequired) {
+            this.rules.push(required);
         }
     }
 
