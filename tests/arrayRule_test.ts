@@ -66,6 +66,4 @@ Deno.test("array - primitive - fail", async () => {
     })
 
     assert(!result.valid);
-
-    console.log(JSON.stringify(result));
 });
