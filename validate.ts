@@ -28,7 +28,8 @@ async function treatRule(field: Field, rule: Rule, context: FieldContext) {
     if (result) {
         if (result instanceof InconsistencyResult) {
             context.inconsistencies = context.inconsistencies || {};
-            context.inconsistencies[rule.name] = compiledMessages[rule.name](field, result);
+            let message = compiledMessages[rule.name] || compiledMessages.$default;
+            context.inconsistencies[rule.name] = message(field, result);
         } else {
             context.current = result(context.current);
         }

@@ -8,8 +8,10 @@ export type Messages = {
 };
 
 const globalMessages: Messages = {
+    $default: "The field '# {field}' with the value '# {value}' has an error.",
     required: "The field '#{field}' is required.",
-    isString: "The field '#{field}' with the value '#{value}' must be string."
+    isString: "The field '#{field}' with the value '#{value}' must be string.",
+    isDate: "The field '#{field}' with the value '#{value}' must be date."
 };
 
 export const compiledMessages: {
