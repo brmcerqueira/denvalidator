@@ -39,7 +39,7 @@ Deno.test("array - fail", async () => {
     assert(!result.valid);
 });
 
-Deno.test("array - fail - minLength", async () => {
+Deno.test("array - minLength - fail", async () => {
     let data = {
         name: "Test",
         child: [{
@@ -62,7 +62,7 @@ Deno.test("array - fail - minLength", async () => {
     assert(!result.valid);
 });
 
-Deno.test("array - fail - maxLength", async () => {
+Deno.test("array - maxLength - fail", async () => {
     let data = {
         name: "Test",
         child: [{

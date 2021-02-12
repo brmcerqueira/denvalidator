@@ -1,5 +1,5 @@
 import { assert } from "https://deno.land/std/testing/asserts.ts";
-import { required, validate, isFloat } from "../mod.ts";
+import { required, validate, isFloat, min, max } from "../mod.ts";
 
 Deno.test("isFloat", async () => {
     let data = {
@@ -8,8 +8,8 @@ Deno.test("isFloat", async () => {
     }
 
     let result = await validate(data, {
-        value: [required, isFloat],
-        valueTwo: [required, isFloat],
+        value: [required, isFloat, min(1), max(2)],
+        valueTwo: [required, isFloat, min(1), max(2)],
     })
 
     assert(result.valid);
@@ -34,6 +34,30 @@ Deno.test("isFloat - fail - 2", async () => {
 
     let result = await validate(data, {
         value: [required, isFloat]
+    })
+
+    assert(!result.valid);
+});
+
+Deno.test("isFloat - min - fail", async () => {
+    let data = {
+        value: 1.5
+    }
+
+    let result = await validate(data, {
+        value: [required, isFloat, min(2)]
+    })
+
+    assert(!result.valid);
+});
+
+Deno.test("isFloat - max - fail", async () => {
+    let data = {
+        value: 2.5
+    }
+
+    let result = await validate(data, {
+        value: [required, isFloat, max(1)]
     })
 
     assert(!result.valid);
