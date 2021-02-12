@@ -8,7 +8,7 @@ function isFloatPrivate(data: any): boolean {
 
 export function isFloat(data: any): RuleResult {
     if (data && !isFloatPrivate(data)) {
-        if (typeof data == "string") {
+        if (typeof data === "string") {
             let value = Number.parseFloat(data);
             if (!Number.isNaN(value)) {
                 return new TransformResult(value);

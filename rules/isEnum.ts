@@ -10,7 +10,7 @@ export function isEnum(enumType: any): Rule {
                 return new InconsistencyResult(data, { values: values });
             }
     
-            if (typeof data == "string") {
+            if (typeof data === "string") {
                 return new TransformResult(enumType[data]);
             }     
         }
