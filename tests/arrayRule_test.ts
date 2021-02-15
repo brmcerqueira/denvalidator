@@ -1,5 +1,5 @@
 import { assert } from "https://deno.land/std/testing/asserts.ts";
-import { required, validate, array, isString } from "../mod.ts";
+import { required, validate, array, isString, minLength, maxLength } from "../mod.ts";
 
 Deno.test("array", async () => {
     let data = {
@@ -51,10 +51,7 @@ Deno.test("array - minLength - fail", async () => {
 
     let result = await validate(data, {
         name: [required],
-        child: array({ 
-            required: true, 
-            min: 3 
-        }, {
+        child: array([required, minLength(3)], {
             name: [required]
         })
     })
@@ -74,10 +71,7 @@ Deno.test("array - maxLength - fail", async () => {
 
     let result = await validate(data, {
         name: [required],
-        child: array({ 
-            required: true, 
-            max: 1
-        }, {
+        child: array([required, maxLength(1)], {
             name: [required]
         })
     })

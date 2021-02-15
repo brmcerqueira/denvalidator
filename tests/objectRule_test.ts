@@ -1,5 +1,5 @@
 import { assert } from "https://deno.land/std/testing/asserts.ts";
-import { required, validate, object } from "../mod.ts";
+import { required, validate, object, optional } from "../mod.ts";
 
 Deno.test("object", async () => {
     let data = {
@@ -29,7 +29,7 @@ Deno.test("object - 2", async () => {
 
     let result = await validate(data, {
         name: [required],
-        child: object(false, {
+        child: object(optional, {
             name: [required]
         })
     })
