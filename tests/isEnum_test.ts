@@ -1,5 +1,6 @@
 import { assert } from "https://deno.land/std/testing/asserts.ts";
 import { required, validate, isEnum } from "../mod.ts";
+import { array } from "../rules/arrayRule.ts";
 
 enum TestEnum {
     ValueOne,
@@ -11,12 +12,14 @@ Deno.test("isEnum", async () => {
         enumOne: TestEnum.ValueOne,
         enumTwo: "ValueTwo",
         enumThree: 0,
+        enumArray: ["ValueTwo"]
     }
     
     let result = await validate(data, {
         enumOne: [required, isEnum(TestEnum)],
         enumTwo: [required, isEnum(TestEnum)],
-        enumThree: [required, isEnum(TestEnum)]
+        enumThree: [required, isEnum(TestEnum)],
+        enumArray: array(isEnum(TestEnum)),
     })
 
     assert(result.valid);

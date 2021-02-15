@@ -89,6 +89,9 @@ async function validateObject(data: any, schema: Schema, wrapper: ValidateResult
                         if (itemContext.inconsistencies) {
                             fieldWrapper.put(i, itemContext.inconsistencies);
                         }
+                        else {
+                            array[i] = itemContext.current;
+                        } 
                     }                                   
                 } 
             }
@@ -103,8 +106,7 @@ async function validateObject(data: any, schema: Schema, wrapper: ValidateResult
         if (context.inconsistencies) {
             wrapper.put(field, context.inconsistencies);
         }
-
-        if (data) {
+        else if (data) {
             data[field] = context.current;
         }     
     }
