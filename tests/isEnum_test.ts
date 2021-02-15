@@ -22,7 +22,6 @@ Deno.test("isEnum", async () => {
     assert(result.valid);
 });
 
-
 Deno.test("isEnum - fail", async () => {
     let data = {
         enumOne: 9,
