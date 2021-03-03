@@ -1,8 +1,9 @@
-import { Schema, Rule, Rules } from "../schema.ts";
+import { Schema, Rules } from "../schema.ts";
 import { ComplexRule } from "./complexRule.ts";
+import { DynamicRules } from "./dynamicRules.ts";
 import { required } from "./required.ts";
 
-export type ArrayRuleEach = Rules | Schema;
+export type ArrayRuleEach = Rules | Schema | DynamicRules;
 
 export function array(each: ArrayRuleEach): ArrayRule
 export function array(rules: Rules, each: ArrayRuleEach): ArrayRule
@@ -11,7 +12,7 @@ export function array(arg1: ArrayRuleEach, arg2?: ArrayRuleEach): ArrayRule {
 }
 
 export class ArrayRule extends ComplexRule {
-    constructor(private _each: ArrayRuleEach, rules: Rule | Rule[]) {
+    constructor(private _each: ArrayRuleEach, rules: Rules) {
         super(rules);
     }
 

@@ -1,6 +1,7 @@
 import { ComplexRule } from "./rules/complexRule.ts";
 import { TransformResult } from "./results/transformResult.ts";
 import { InconsistencyResult } from "./results/inconsistencyResult.ts";
+import { DynamicRules } from "./rules/dynamicRules.ts";
 
 export type Rules = Rule | Rule[];
 
@@ -26,5 +27,5 @@ export type RuleResult = TransformResult | InconsistencyResult | null;
 export type Rule = (data: any) => RuleResult | Promise<RuleResult>;
 
 export type Schema = {
-    [key: string]: Rule | ComplexRule | Rule[];
+    [key: string]: ComplexRule | DynamicRules | Rules;
 };
