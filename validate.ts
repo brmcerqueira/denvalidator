@@ -7,7 +7,7 @@ import { RootValidateResultWrapper } from "./wrappers/rootValidateResultWrapper.
 import { compiledMessages } from "./messages.ts";
 import { InconsistencyResult } from "./results/inconsistencyResult.ts";
 import { Field } from "./field.ts";
-import { DynamicRules } from "./rules/dynamicRules.ts";
+import { DynamicRule } from "./rules/dynamicRule.ts";
 import { isRuleArray, isRule } from "./utils.ts";
 
 type FieldContext = { 
@@ -51,12 +51,11 @@ async function validateArray(array: any[], rule: ArrayRule, wrapper: ValidateRes
             await validateArray(itemContext.current, each, wrapper.go(index));
         }
     } 
-    else if (rule.each instanceof DynamicRules) {
+    else if (rule.each instanceof DynamicRule) {
         let each = rule.each;
         treat = async function (index: Field, itemContext: FieldContext) {
             const rules = each.rules(itemContext.current);
-            await treatField(index, rules, itemContext, 
-                rules instanceof ComplexRule ? wrapper.go(index) : wrapper);
+            await treatField(index, rules, itemContext, wrapper);
         }
     } 
     else if (isRuleArray(rule.each)) {
@@ -120,9 +119,9 @@ async function validateObject(data: any, schema: Schema, wrapper: ValidateResult
             current: data ? data[field] : undefined
         };
 
-        const item = schema[field];
+        const rule = schema[field];
 
-        await treatField(field, item instanceof DynamicRules ? item.rules(data) : item, context, wrapper);
+        await treatField(field, rule instanceof DynamicRule ? rule.rules(data) : rule, context, wrapper);
 
         if (context.inconsistencies) {
             wrapper.put(field, context.inconsistencies);

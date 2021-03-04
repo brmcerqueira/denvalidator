@@ -8,20 +8,20 @@ function rulesNotFound(data: any): RuleResult {
     return new InconsistencyResult(data);
 }
 
-export function choose<T>(treat: (parent: T) => DynamicRulesResult | null): DynamicRules {
-    return new DynamicRules(treat);
+export function choose<T>(treat: (data: T) => DynamicRulesResult | null): DynamicRule {
+    return new DynamicRule(treat);
 }
 
-export function when<T>(check: (parent: T) => boolean, rules: DynamicRulesResult): DynamicRules {
-    return new DynamicRules(p => check(p) ? rules : null);
+export function when<T>(check: (data: T) => boolean, rules: DynamicRulesResult, rulesElse: DynamicRulesResult): DynamicRule {
+    return new DynamicRule(d => check(d) ? rules : rulesElse);
 }
 
-export class DynamicRules {
-    constructor(private treat: (parent: any) => DynamicRulesResult | null) {
+export class DynamicRule {
+    constructor(private treat: (data: any) => DynamicRulesResult | null) {
     }
 
-    public rules(parent: any): ComplexRules {
-        const rules = this.treat(parent);
+    public rules(data: any): ComplexRules {
+        const rules = this.treat(data);
 
         if (rules === null) {
             return [rulesNotFound];

@@ -6,14 +6,19 @@ Deno.test("array", async () => {
         name: "Test",
         child: [{
             name: "Child"
-        }]
+        }],
+        childTwo: [
+            ["Item 1", "Item 2"],
+            ["Item 3", "Item 4"]
+        ]
     }
 
     let result = await validate(data, {
         name: [required],
         child: array({
             name: [required]
-        })
+        }),
+        childTwo: array(array(isString))
     })
 
     assert(result.valid);
