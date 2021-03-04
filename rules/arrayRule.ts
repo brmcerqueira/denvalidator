@@ -1,9 +1,9 @@
-import { Schema, Rules } from "../schema.ts";
+import { Rules, DynamicRulesResult } from "../schema.ts";
 import { ComplexRule } from "./complexRule.ts";
 import { DynamicRules } from "./dynamicRules.ts";
 import { required } from "./required.ts";
 
-export type ArrayRuleEach = Rules | Schema | DynamicRules;
+export type ArrayRuleEach = DynamicRules | DynamicRulesResult;
 
 export function array(each: ArrayRuleEach): ArrayRule
 export function array(rules: Rules, each: ArrayRuleEach): ArrayRule

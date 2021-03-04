@@ -1,4 +1,4 @@
-import { Schema, Rule, RuleResult, ValidateResult, Inconsistencies } from "./schema.ts";
+import { Schema, Rule, RuleResult, ValidateResult, Inconsistencies, ComplexRules } from "./schema.ts";
 import { ObjectRule } from "./rules/objectRule.ts";
 import { ArrayRule } from "./rules/arrayRule.ts";
 import { ComplexRule } from "./rules/complexRule.ts";
@@ -8,19 +8,12 @@ import { compiledMessages } from "./messages.ts";
 import { InconsistencyResult } from "./results/inconsistencyResult.ts";
 import { Field } from "./field.ts";
 import { DynamicRules } from "./rules/dynamicRules.ts";
+import { isRuleArray, isRule } from "./utils.ts";
 
 type FieldContext = { 
     current: any, 
     inconsistencies?: Inconsistencies
 };
-
-function isRule(data: any): data is Rule {
-    return data && data.apply && data.call;
-}
-
-function isRuleArray(data: any): data is Rule[] {
-    return data && Array.isArray(data);
-}
 
 function isPromiseRuleResult(data: any): data is Promise<RuleResult> {
     return data && data.then;
@@ -43,91 +36,93 @@ async function treatRule(field: Field, rule: Rule, context: FieldContext) {
     }
 }
 
-async function treatDynamicRules(root: any, field: Field, item: DynamicRules, context: FieldContext) {
-    const rules = item.rules(root);
-    if (isRuleArray(rules)) {
-        await treatRuleArray(field, rules, context);
-    } 
-    else {
-        await treatRule(field, rules, context);
-    }
-}
-
 async function treatRuleArray(field: Field, rules: Rule[], context: FieldContext) {
     for (let i = 0; i < rules.length; i++) {
         await treatRule(field, rules[i], context);
     }
 }
 
-async function validateObject(root: any, data: any, schema: Schema, wrapper: ValidateResultWrapper) {
+async function validateArray(array: any[], rule: ArrayRule, wrapper: ValidateResultWrapper) {
+    let treat: (index: Field, elementContext: FieldContext) => void;
+
+    if (rule.each instanceof ArrayRule) {
+        let each = rule.each;
+        treat = async function (index: Field, itemContext: FieldContext) {
+            await validateArray(itemContext.current, each, wrapper.go(index));
+        }
+    } 
+    else if (rule.each instanceof DynamicRules) {
+        let each = rule.each;
+        treat = async function (index: Field, itemContext: FieldContext) {
+            const rules = each.rules(itemContext.current);
+            await treatField(index, rules, itemContext, 
+                rules instanceof ComplexRule ? wrapper.go(index) : wrapper);
+        }
+    } 
+    else if (isRuleArray(rule.each)) {
+        let each = rule.each;
+        treat = async function (index: Field, itemContext: FieldContext) {
+            await treatRuleArray(index, each, itemContext);
+        }
+    } 
+    else if (isRule(rule.each)) {
+        let each = rule.each;
+        treat = async function (index: Field, itemContext: FieldContext) {
+            await treatRule(index, each, itemContext);
+        }
+    } 
+    else {
+        let each = rule.each;
+        treat = async function (index: Field, itemContext: FieldContext) {
+            await validateObject(itemContext.current, each, wrapper.go(index));
+        }                
+    } 
+
+    for (let i = 0; i < array.length; i++) {
+        let itemContext: FieldContext = {
+            current: array[i]
+        };
+
+        await treat(i, itemContext);
+
+        if (itemContext.inconsistencies) {
+            wrapper.put(i, itemContext.inconsistencies);
+        }
+        else {
+            array[i] = itemContext.current;
+        } 
+    }
+}
+
+async function treatField(field: Field, rules: ComplexRules, context: FieldContext, wrapper: ValidateResultWrapper) {
+    if (rules instanceof ComplexRule) {
+        await treatRuleArray(field, rules.rules, context);
+        if (context.current) {
+            if (rules instanceof ObjectRule) {
+                await validateObject(context.current, rules.schema, wrapper.go(field));
+            } 
+            else if (rules instanceof ArrayRule) {
+                await validateArray(context.current, rules, wrapper.go(field));                                 
+            } 
+        }
+    } 
+    else if (isRuleArray(rules)) {
+        await treatRuleArray(field, rules, context);
+    } 
+    else {
+        await treatRule(field, rules, context);
+    } 
+}
+
+async function validateObject(data: any, schema: Schema, wrapper: ValidateResultWrapper) {
     for (const field in schema) {
-        let context: FieldContext = {
+        const context: FieldContext = {
             current: data ? data[field] : undefined
         };
-        let item = schema[field];
-        if (item instanceof ComplexRule) {
-            await treatRuleArray(field, item.rules, context);
-            if (context.current) {
-                if (item instanceof ObjectRule) {
-                    await validateObject(root, context.current, item.schema, wrapper.go(field));
-                } 
-                else if (item instanceof ArrayRule) {
-                    let fieldWrapper = wrapper.go(field);
-                    let array: any[] = context.current;
-    
-                    let treat: (index: Field, elementContext: FieldContext) => void;
-         
-                    if (item.each instanceof DynamicRules) {                     
-                        let each = item.each;
-                        treat = async function (index: Field, itemContext: FieldContext) {
-                            await treatDynamicRules(root, index, each, itemContext);
-                        } 
-                    } 
-                    else if (isRuleArray(item.each)) {
-                        let each = item.each;
-                        treat = async function (index: Field, itemContext: FieldContext) {
-                            await treatRuleArray(index, each, itemContext);
-                        }
-                    } 
-                    else if (isRule(item.each)) {
-                        let each = item.each;
-                        treat = async function (index: Field, itemContext: FieldContext) {
-                            await treatRule(index, each, itemContext);
-                        }
-                    } 
-                    else {
-                        let each = item.each;
-                        treat = async function (index: Field, itemContext: FieldContext) {
-                            await validateObject(root, itemContext.current, each, fieldWrapper.go(index));
-                        }                
-                    } 
-    
-                    for (let i = 0; i < array.length; i++) {
-                        let itemContext: FieldContext = {
-                            current: array[i]
-                        };
-    
-                        await treat(i, itemContext);
-    
-                        if (itemContext.inconsistencies) {
-                            fieldWrapper.put(i, itemContext.inconsistencies);
-                        }
-                        else {
-                            array[i] = itemContext.current;
-                        } 
-                    }                                   
-                } 
-            }
-        } 
-        else if (item instanceof DynamicRules) {
-            await treatDynamicRules(root, field, item, context);
-        } 
-        else if (isRuleArray(item)) {
-            await treatRuleArray(field, item, context);
-        } 
-        else {
-            await treatRule(field, item, context);
-        }
+
+        const item = schema[field];
+
+        await treatField(field, item instanceof DynamicRules ? item.rules(data) : item, context, wrapper);
 
         if (context.inconsistencies) {
             wrapper.put(field, context.inconsistencies);
@@ -148,6 +143,6 @@ async function validateObject(root: any, data: any, schema: Schema, wrapper: Val
 
 export async function validate(data: any, schema: Schema): Promise<ValidateResult> {
     const rootValidateResultWrapper = new RootValidateResultWrapper();
-    await validateObject(data, data, schema, rootValidateResultWrapper);
+    await validateObject(data, schema, rootValidateResultWrapper);
     return rootValidateResultWrapper.result;
 }
