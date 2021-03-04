@@ -43,37 +43,45 @@ async function treatRuleArray(field: Field, rules: Rule[], context: FieldContext
 }
 
 async function validateArray(array: any[], rule: ArrayRule, wrapper: ValidateResultWrapper) {
-    let treat: (index: Field, elementContext: FieldContext) => void;
+    let treat: (index: Field, elementContext: FieldContext) => Promise<boolean>;
 
     if (rule.each instanceof ArrayRule) {
         let each = rule.each;
-        treat = async function (index: Field, itemContext: FieldContext) {
+        treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
             await validateArray(itemContext.current, each, wrapper.go(index));
+            return false;
         }
     } 
     else if (rule.each instanceof DynamicRule) {
         let each = rule.each;
-        treat = async function (index: Field, itemContext: FieldContext) {
+        treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
             const rules = each.rules(itemContext.current);
-            await treatField(index, rules, itemContext, wrapper);
+            if (rules) {
+                await treatField(index, rules, itemContext, wrapper);
+                return false;
+            } 
+            return true;
         }
     } 
     else if (isRuleArray(rule.each)) {
         let each = rule.each;
-        treat = async function (index: Field, itemContext: FieldContext) {
+        treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
             await treatRuleArray(index, each, itemContext);
+            return false;
         }
     } 
     else if (isRule(rule.each)) {
         let each = rule.each;
-        treat = async function (index: Field, itemContext: FieldContext) {
+        treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
             await treatRule(index, each, itemContext);
+            return false;
         }
     } 
     else {
         let each = rule.each;
-        treat = async function (index: Field, itemContext: FieldContext) {
+        treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
             await validateObject(itemContext.current, each, wrapper.go(index));
+            return false;
         }                
     } 
 
@@ -82,9 +90,10 @@ async function validateArray(array: any[], rule: ArrayRule, wrapper: ValidateRes
             current: array[i]
         };
 
-        await treat(i, itemContext);
-
-        if (itemContext.inconsistencies) {
+        if (await treat(i, itemContext)) {
+            array.splice(i, 1);
+        }
+        else if (itemContext.inconsistencies) {
             wrapper.put(i, itemContext.inconsistencies);
         }
         else {
@@ -121,7 +130,18 @@ async function validateObject(data: any, schema: Schema, wrapper: ValidateResult
 
         const rule = schema[field];
 
-        await treatField(field, rule instanceof DynamicRule ? rule.rules(data) : rule, context, wrapper);
+        if (rule instanceof DynamicRule) {
+            const rules = rule.rules(data);
+            if (rules) {
+                await treatField(field, rules, context, wrapper);
+            } 
+            else {
+                delete data[field];
+            }       
+        }
+        else {
+            await treatField(field, rule, context, wrapper);
+        }
 
         if (context.inconsistencies) {
             wrapper.put(field, context.inconsistencies);

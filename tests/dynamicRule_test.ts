@@ -1,6 +1,5 @@
 import { assert } from "https://deno.land/std/testing/asserts.ts";
-import { choose, isBool, isInt, isString, required, Schema, validate } from "../mod.ts";
-import { array } from "../rules/arrayRule.ts";
+import { choose, isBool, isInt, isString, required, Schema, validate, array } from "../mod.ts";
 
 type Child = {
     index: number
@@ -9,9 +8,13 @@ type Child = {
 Deno.test("choose", async () => {
     let data = {
         child: [
+            { index: 4, valueTwo: true },
             { index: 1, value: "Value 1", valueTwo: 1 },
+            { index: 4, valueTwo: true },
             { index: 2, value: 2 },
-            { index: 3, valueTwo: true }
+            { index: 4, valueTwo: true },
+            { index: 3, valueTwo: true },
+            { index: 4, valueTwo: true }
         ]
     }
     
@@ -82,6 +85,6 @@ Deno.test("choose - fail", async () => {
             return result;
         }))
     })
-    console.log(JSON.stringify(result));
+
     assert(!result.valid);
 });
