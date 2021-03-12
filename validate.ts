@@ -45,13 +45,32 @@ async function treatRuleArray(field: Field, rules: Rule[], context: FieldContext
 async function validateArray(array: any[], rule: ArrayRule, wrapper: ValidateResultWrapper) {
     let treat: (index: Field, elementContext: FieldContext) => Promise<boolean>;
 
-    if (rule.each instanceof ArrayRule) {
+    if (rule.each instanceof ComplexRule) {
         let each = rule.each;
+        let treatComplexRule: (index: Field, elementContext: FieldContext) => Promise<void>;
+        
+        if (each instanceof ArrayRule) {
+            treatComplexRule = async function (index: Field, itemContext: FieldContext) {
+                await validateArray(itemContext.current, <ArrayRule> each, wrapper.go(index));
+            }
+        }
+        else if (each instanceof ObjectRule) {
+            let schema = each.schema;
+            treatComplexRule = async function (index: Field, itemContext: FieldContext) {
+                await validateObject(itemContext.current, schema, wrapper.go(index));
+            }  
+        }
+
         treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
-            await validateArray(itemContext.current, each, wrapper.go(index));
+            await treatRuleArray(index, each.rules, itemContext);
+
+            if (itemContext.current) {
+                await treatComplexRule(index, itemContext);
+            }
+      
             return false;
         }
-    } 
+    }
     else if (rule.each instanceof DynamicRule) {
         let each = rule.each;
         treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
@@ -76,14 +95,14 @@ async function validateArray(array: any[], rule: ArrayRule, wrapper: ValidateRes
             await treatRule(index, each, itemContext);
             return false;
         }
-    } 
+    }     
     else {
         let each = rule.each;
         treat = async function (index: Field, itemContext: FieldContext): Promise<boolean> {
             await validateObject(itemContext.current, each, wrapper.go(index));
             return false;
         }                
-    } 
+    }  
 
     for (let i = 0; i < array.length; i++) {
         let itemContext: FieldContext = {

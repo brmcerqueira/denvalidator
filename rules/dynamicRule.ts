@@ -1,7 +1,8 @@
 import { DynamicRulesResult, ComplexRules } from "../schema.ts";
 import { isRuleArray,isRule } from "../utils.ts";
-import { ArrayRule } from "./arrayRule.ts";
+import { ComplexRule } from "./complexRule.ts";
 import { ObjectRule } from "./objectRule.ts";
+import { required } from "./required.ts";
 
 export function choose<T>(treat: (data: T) => DynamicRulesResult | null): DynamicRule {
     return new DynamicRule(treat);
@@ -18,11 +19,11 @@ export class DynamicRule {
     public rules(data: any): ComplexRules | null {
         const rules = this.treat(data);
 
-        if (rules === null || isRuleArray(rules) || isRule(rules) || rules instanceof ArrayRule) {
+        if (rules === null || isRuleArray(rules) || isRule(rules) || rules instanceof ComplexRule) {
             return rules;
         }
         else {
-            return new ObjectRule(rules, []);
+            return new ObjectRule(rules, required);
         }
     }
 }

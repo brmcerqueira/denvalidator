@@ -2,13 +2,12 @@ import { ComplexRule } from "./rules/complexRule.ts";
 import { TransformResult } from "./results/transformResult.ts";
 import { InconsistencyResult } from "./results/inconsistencyResult.ts";
 import { DynamicRule } from "./rules/dynamicRule.ts";
-import { ArrayRule } from "./rules/arrayRule.ts";
 
 export type Rules = Rule | Rule[];
 
 export type ComplexRules = ComplexRule | Rules;
 
-export type DynamicRulesResult = ArrayRule | Rules | Schema
+export type DynamicRulesResult = ComplexRules | Schema
 
 export type AllRules = DynamicRule | ComplexRules;
 
